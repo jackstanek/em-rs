@@ -78,3 +78,65 @@ where
         converged: false,
     }
 }
+
+/// Fit the parameters with the expectation-maximization (EM) algorithm,
+/// returning the final parameters, the log-likelihoods at each iteration, and
+/// whether the algorithm converged.
+///
+/// This function runs the E-step in parallel using [`rayon`] and is only
+/// available when the `rayon` feature is active.
+#[cfg(feature = "rayon")]
+pub fn par_em<M>(
+    model: &M,
+    data: &[M::Datum],
+    mut params: M::Params,
+    tol: f64,
+    max_iter: usize,
+) -> Fit<M::Params>
+where
+    M: Model + Sync,
+    M::Datum: Sync,
+    M::Params: Sync,
+    M::Stats: Send,
+{
+    use rayon::prelude::*;
+
+    let mut trace = Vec::with_capacity(max_iter);
+    for _ in 0..max_iter {
+        let (stats, log_lik) = data
+            .par_iter()
+            .map(|datum| {
+                let mut local = model.zero_stats(&params);
+                let ll = model.accumulate(&params, datum, &mut local);
+                (local, ll)
+            })
+            .reduce(
+                || (model.zero_stats(&params), 0.0),
+                |(mut acc, ll), (local, local_ll)| {
+                    model.merge(&mut acc, local);
+                    (acc, ll + local_ll)
+                },
+            );
+
+        // sanity check
+        let delta = trace.last().map(|prev| log_lik - prev);
+        debug_assert!(
+            delta.map_or(true, |d| d > -1e-8),
+            "EM decreased log-likelihood. This is probably due to a bug in the model's implementation of `accumulate`."
+        );
+        trace.push(log_lik);
+        params = model.maximize(stats);
+        if delta.is_some_and(|d| d.abs() < tol) {
+            return Fit {
+                params,
+                log_lik: trace,
+                converged: true,
+            };
+        }
+    }
+    Fit {
+        params,
+        log_lik: trace,
+        converged: false,
+    }
+}

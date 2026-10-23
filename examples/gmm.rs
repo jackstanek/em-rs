@@ -1,6 +1,6 @@
 //! Example of a 1-D Gaussian Mixture Model (GMM).
 
-use em_rs::{Model, em};
+use em_rs::Model;
 
 struct Gmm1 {
     reg: f64,
@@ -76,6 +76,7 @@ impl Model for Gmm1 {
     }
 }
 
+#[cfg(feature = "rayon")]
 fn main() {
     let model = Gmm1 { reg: 1e-6 };
     let data = vec![
@@ -87,7 +88,39 @@ fn main() {
         mu: vec![0.0, 6.0],
         var: vec![1.0, 1.0],
     };
-    let fit = em(&model, &data, initial_params, 1e-6, 100);
+    println!("rayon support exists; using parallel EM");
+    let fit = em_rs::par_em(&model, &data, initial_params, 1e-6, 100);
+    println!("Converged: {}", fit.converged);
+    println!("Final parameters:");
+    for (k, ((pi_k, mu_k), var_k)) in fit
+        .params
+        .pi
+        .iter()
+        .zip(&fit.params.mu)
+        .zip(&fit.params.var)
+        .enumerate()
+    {
+        println!(
+            "Component {}: pi = {}, mu = {}, var = {}",
+            k, pi_k, mu_k, var_k
+        );
+    }
+}
+
+#[cfg(not(feature = "rayon"))]
+fn main() {
+    let model = Gmm1 { reg: 1e-6 };
+    let data = vec![
+        1.0, 1.2, 0.8, 1.1, 0.9, // Cluster 1
+        5.0, 5.2, 4.8, 5.1, 4.9, // Cluster 2
+    ];
+    let initial_params = Gmm1Params {
+        pi: vec![0.5, 0.5],
+        mu: vec![0.0, 6.0],
+        var: vec![1.0, 1.0],
+    };
+    println!("no rayon support; using single-threaded EM");
+    let fit = em_rs::em(&model, &data, initial_params, 1e-6, 100);
     println!("Converged: {}", fit.converged);
     println!("Final parameters:");
     for (k, ((pi_k, mu_k), var_k)) in fit

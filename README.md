@@ -21,5 +21,7 @@ $ cargo add --git 'https://github.com/jackstanek/em-rs.git'
 ## Features
 
 Not implemented yet:
-- [ ] `rayon` (multi-threaded E-step)
 - [ ] Built-in model classes (GMMs, HMMs, PCFGs...)
+
+Implemented:
+- [x] `rayon` (multi-threaded E-step)
