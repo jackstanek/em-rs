@@ -4,5 +4,6 @@ description = "Generic expectation-maximization (EM) algorithm for Rust"
 version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
+rust-version = "1.99"
 
 [dependencies]
