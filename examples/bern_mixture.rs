@@ -2,7 +2,7 @@
 //! different biases. The EM algorithm can be used to estimate the biases of the
 //! two coins and the mixing proportion.
 
-use em_rs::{em, Model};
+use em_rs::{Model, em};
 
 struct BernMix {}
 
