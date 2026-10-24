@@ -3,6 +3,8 @@
 //! (GMMs), hidden Markov models (HMMs), probabilistic context-free grammars
 //! (PCFGs), and more.
 
+pub mod models;
+
 /// A model which uses the expectation-maximization (EM) algorithm to fit
 /// parameters.
 pub trait Model {
